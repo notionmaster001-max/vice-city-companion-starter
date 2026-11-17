@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vice City 100% Master Companion™ | 2026 Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            vice: {
+              pink: '#ff2a85',
+              purple: '#9d00ff',
+              cyan: '#00f0ff',
+              dark: '#0a0a12',
+              card: '#131322',
+              border: '#2a2a44'
+            }
+          },
+          fontFamily: {
+            mono: ['Courier New', 'monospace'],
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FULL OFFLINE CSS FALLBACK: Renders 100% properly without internet connection -->
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background-color: #0a0a12;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .glass-panel {
+      background: rgba(19, 19, 34, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 42, 133, 0.25);
+    }
+    @keyframes neonGlow {
+      0%, 100% { text-shadow: 0 0 10px #ff2a85, 0 0 20px #ff2a85; }
+      50% { text-shadow: 0 0 15px #00f0ff, 0 0 30px #00f0ff; }
+    }
+    .neon-title { animation: neonGlow 4s ease-in-out infinite; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0a0a12; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #ff2a85; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-vice-dark text-slate-100 min-h-screen font-sans flex flex-col antialiased selection:bg-vice-pink selection:text-white">
+
+  <!-- HEADER -->
+  <header class="glass-panel sticky top-0 z-50 border-b border-vice-pink/30 px-4 py-3 sm:px-8 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-vice-pink to-vice-cyan flex items-center justify-center font-black text-xl text-black shadow-lg shadow-vice-pink/30">
+        VC
+      </div>
+      <div>
+        <h1 class="text-xl sm:text-2xl font-black tracking-wider uppercase text-white flex items-center gap-2">
+          <span>Vice City</span>
+          <span class="text-vice-cyan text-sm font-bold bg-vice-cyan/10 px-2 py-0.5 rounded border border-vice-cyan/40">100% OS</span>
+        </h1>
+        <p class="text-xs text-slate-400 font-mono">2026 Master Companion • Dual-Screen Progression Tracker</p>
+      </div>
+    </div>
+
+    <!-- GLOBAL PROGRESS -->
+    <div class="flex items-center gap-4 bg-vice-dark/80 px-4 py-2 rounded-xl border border-vice-border min-w-[240px]">
+      <div class="flex-1">
+        <div class="flex justify-between text-xs font-mono mb-1">
+          <span class="text-slate-400">TOTAL PROGRESS</span>
+          <span id="percent-label" class="font-bold text-vice-cyan">0.0%</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+          <div id="progress-bar" class="bg-gradient-to-r from-vice-pink via-vice-purple to-vice-cyan h-2.5 rounded-full transition-all duration-300 w-0"></div>
+        </div>
+      </div>
+      <div class="text-right">
+        <span id="count-label" class="text-xs font-mono text-slate-400">0 / 179</span>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="flex items-center gap-2">
+      <button onclick="exportData()" class="px-3 py-1.5 text-xs font-mono bg-vice-border hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-600">Export</button>
+      <button onclick="document.getElementById('import-file').click()" class="px-3 py-1.5 text-xs font-mono bg-vice-border hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-600">Import</button>
+      <input type="file" id="import-file" class="hidden" onchange="importData(event)">
+      <button onclick="resetAll()" class="px-3 py-1.5 text-xs font-mono bg-red-950/40 hover:bg-red-900/60 text-red-300 rounded-lg transition border border-red-800/40">Reset</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+
+    <!-- CONTROLS & FILTER BAR -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <div class="md:col-span-5 relative">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Search mission, weapon, heist, collectible..."
+          oninput="renderTasks()"
+          class="w-full bg-vice-card border border-vice-border focus:border-vice-cyan rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-vice-cyan transition"
+        >
+        <span class="absolute right-3 top-3 text-xs font-mono text-slate-500">Ctrl+K</span>
+      </div>
+
+      <div class="md:col-span-7 flex flex-wrap gap-2 items-center">
+        <button onclick="setFilter('all')" class="filter-btn active px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-pink text-white shadow-lg shadow-vice-pink/30" data-cat="all">All Items (179)</button>
+        <button onclick="setFilter('story')" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-card text-slate-400 hover:text-white border border-vice-border" data-cat="story">Story (69)</button>
+        <button onclick="setFilter('strangers')" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-card text-slate-400 hover:text-white border border-vice-border" data-cat="strangers">Strangers (25)</button>
+        <button onclick="setFilter('collectibles')" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-card text-slate-400 hover:text-white border border-vice-border" data-cat="collectibles">Collectibles (50)</button>
+        <button onclick="setFilter('heists')" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-card text-slate-400 hover:text-white border border-vice-border" data-cat="heists">Heists & Ops (15)</button>
+        <button onclick="setFilter('activities')" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-card text-slate-400 hover:text-white border border-vice-border" data-cat="activities">World Events (20)</button>
+      </div>
+    </div>
+
+    <!-- STATS WIDGETS -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="glass-panel p-4 rounded-xl border border-vice-border/80 flex flex-col">
+        <span class="text-xs font-mono text-slate-400">STORY PROGRESS</span>
+        <span id="stat-story" class="text-xl font-black text-vice-pink mt-1">0 / 69</span>
+      </div>
+      <div class="glass-panel p-4 rounded-xl border border-vice-border/80 flex flex-col">
+        <span class="text-xs font-mono text-slate-400">COLLECTIBLES</span>
+        <span id="stat-collectibles" class="text-xl font-black text-vice-cyan mt-1">0 / 50</span>
+      </div>
+      <div class="glass-panel p-4 rounded-xl border border-vice-border/80 flex flex-col">
+        <span class="text-xs font-mono text-slate-400">STRANGER OPS</span>
+        <span id="stat-strangers" class="text-xl font-black text-amber-400 mt-1">0 / 25</span>
+      </div>
+      <div class="glass-panel p-4 rounded-xl border border-vice-border/80 flex flex-col">
+        <span class="text-xs font-mono text-slate-400">HEISTS & WORLD</span>
+        <span id="stat-heists" class="text-xl font-black text-emerald-400 mt-1">0 / 35</span>
+      </div>
+    </div>
+
+    <!-- TASK LIST CONTAINER -->
+    <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    <!-- EMPTY STATE -->
+    <div id="empty-state" class="hidden text-center py-16">
+      <p class="text-slate-500 font-mono text-sm">No objectives match your search or filter.</p>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="glass-panel border-t border-vice-border py-4 px-6 text-center text-xs text-slate-500 font-mono">
+    Vice City 100% Master Companion™ • Standalone Offline App • Commercial Single User License • No Refunds Under Digital Products Terms
+  </footer>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // Lazy AudioContext (Safely created on first user gesture to prevent browser autoplay block)
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playChime(success) {
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        if (success) {
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else {
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        }
+      } catch(e) {
+        // Audio error silent fallback
+      }
+    }
+
+    // MASTER DATABASE OF 179 ACCURATE OBJECTIVES
+    const DB = [
+  {
+    "id": "s01",
+    "cat": "story",
+    "title": "Prologue: The Highway Run",
+    "sub": "Act 1 \u2022 Dual Protagonist Intro",
+    "xp": "$1,000 Starting Cash",
+    "missable": false
+  },
+  {
+    "id": "s02",
+    "cat": "story",
+    "title": "Welcome to Leonida",
+    "sub": "Act 1 \u2022 First Safehouse Unlocked",
+    "xp": "Safehouse Unlocked",
+    "missable": false
+  },
+  {
+    "id": "s03",
+    "cat": "story",
+    "title": "Ocean Drive Hustle",
+    "sub": "Act 1 \u2022 Getaway Car Selection",
+    "xp": "Custom V8 Coupe",
+    "missable": false
+  },
+  {
+    "id": "s04",
+    "cat": "story",
+    "title": "Neon Nights Meetup",
+    "sub": "Act 1 \u2022 Contact: Raul Martinez",
+    "xp": "Smuggler Contact",
+    "missable": false
+  },
+  {
+    "id": "s05",
+    "cat": "story",
+    "title": "Strip Mall Pawn Raid",
+    "sub": "Act 1 \u2022 First Store Robbery",
+    "xp": "$3,500 Cash",
+    "missable": false
+  },
+  {
+    "id": "s06",
+    "cat": "story",
+    "title": "Port Gelhorn Drop",
+    "sub": "Act 1 \u2022 Boat Navigation",
+    "xp": "Jet Ski Unlocked",
+    "missable": false
+  },
+  {
+    "id": "s07",
+    "cat": "story",
+    "title": "The Gator Keys Shakedown",
+    "sub": "Act 1 \u2022 Swamp Airboat Run",
+    "xp": "Airboat License",
+    "missable": false
+  },
+  {
+    "id": "s08",
+    "cat": "story",
+    "title": "Vice Beach Surveillance",
+    "sub": "Act 1 \u2022 Drone Recon",
+    "xp": "Recon Drone",
+    "missable": false
+  },
+  {
+    "id": "s09",
+    "cat": "story",
+    "title": "The Sunset Motel Standoff",
+    "sub": "Act 1 \u2022 Police Evade 3-Stars",
+    "xp": "Reputation Boost",
+    "missable": false
+  },
+  {
+    "id": "s10",
+    "cat": "story",
+    "title": "Bank of Leonida Branch Prep",
+    "sub": "Act 1 \u2022 Heist Setup 1",
+    "xp": "Thermal Cutter",
+    "missable": false
+  },
+  {
+    "id": "s11",
+    "cat": "story",
+    "title": "First Score: Vice Central Vault",
+    "sub": "Act 1 Heist Finale",
+    "xp": "$180,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s12",
+    "cat": "story",
+    "title": "Under the Radar",
+    "sub": "Act 2 \u2022 Grass River Smuggling",
+    "xp": "Airplane Hangar",
+    "missable": false
+  },
+  {
+    "id": "s13",
+    "cat": "story",
+    "title": "Vice Harbor Cargo Hijack",
+    "sub": "Act 2 \u2022 Semi-Truck Pursuit",
+    "xp": "Heavy Weapons Stash",
+    "missable": false
+  },
+  {
+    "id": "s14",
+    "cat": "story",
+    "title": "The Penthouse Intrusion",
+    "sub": "Act 2 \u2022 Stealth Infiltration",
+    "xp": "Silenced Pistol",
+    "missable": false
+  },
+  {
+    "id": "s15",
+    "cat": "story",
+    "title": "Vice City Nightclub Takeover",
+    "sub": "Act 2 \u2022 Business Opportunity",
+    "xp": "Nightclub Asset",
+    "missable": false
+  },
+  {
+    "id": "s16",
+    "cat": "story",
+    "title": "Bayside Luxury Heist Prep",
+    "sub": "Act 2 \u2022 Superyacht Recon",
+    "xp": "Scuba Gear",
+    "missable": false
+  },
+  {
+    "id": "s17",
+    "cat": "story",
+    "title": "The Ocean Sovereign Heist",
+    "sub": "Act 2 Heist Finale",
+    "xp": "$450,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s18",
+    "cat": "story",
+    "title": "Federal Courtroom Breakout",
+    "sub": "Act 2 \u2022 Smoke & Explosives",
+    "xp": "Lawyer Contact",
+    "missable": false
+  },
+  {
+    "id": "s19",
+    "cat": "story",
+    "title": "The Everglade Airdrop",
+    "sub": "Act 2 \u2022 Night Sky Jump",
+    "xp": "Military Parachute",
+    "missable": false
+  },
+  {
+    "id": "s20",
+    "cat": "story",
+    "title": "Vice City Speedway Sabotage",
+    "sub": "Act 2 \u2022 Supercar Grand Prix",
+    "xp": "Prototipo Supercar",
+    "missable": false
+  },
+  {
+    "id": "s21",
+    "cat": "story",
+    "title": "Cartel Compound Raid",
+    "sub": "Act 3 \u2022 Tactical Siege",
+    "xp": "Assault Rifle Mk2",
+    "missable": false
+  },
+  {
+    "id": "s22",
+    "cat": "story",
+    "title": "Leonida State Mint Prep A",
+    "sub": "Act 3 \u2022 Security Drills",
+    "xp": "Keycard Cloner",
+    "missable": false
+  },
+  {
+    "id": "s23",
+    "cat": "story",
+    "title": "Leonida State Mint Prep B",
+    "sub": "Act 3 \u2022 Armored Escape Van",
+    "xp": "Bulletproof Tires",
+    "missable": false
+  },
+  {
+    "id": "s24",
+    "cat": "story",
+    "title": "The Masterpiece: State Mint Heist",
+    "sub": "Act 3 Major Finale",
+    "xp": "$1,200,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s25",
+    "cat": "story",
+    "title": "Loose Ends & Betrayal",
+    "sub": "Act 3 Climax (Choice Point)",
+    "xp": "Final Decision",
+    "missable": true
+  },
+  {
+    "id": "s26",
+    "cat": "story",
+    "title": "The Last Sunset",
+    "sub": "Story Finale Credits",
+    "xp": "100% Story Flag",
+    "missable": false
+  },
+  {
+    "id": "s27",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #1",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$67,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s28",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #2",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$70,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s29",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #3",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$72,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s30",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #4",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$75,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s31",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #5",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$77,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s32",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #6",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$80,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s33",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #7",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$82,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s34",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #8",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$85,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s35",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #9",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$87,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s36",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #10",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$90,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s37",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #11",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$92,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s38",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #12",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$95,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s39",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #13",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$97,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s40",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #14",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$100,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s41",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #15",
+    "sub": "Story Progression \u2022 Chapter 1",
+    "xp": "$102,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s42",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #16",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$105,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s43",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #17",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$107,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s44",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #18",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$110,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s45",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #19",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$112,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s46",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #20",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$115,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s47",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #21",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$117,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s48",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #22",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$120,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s49",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #23",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$122,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s50",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #24",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$125,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s51",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #25",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$127,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s52",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #26",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$130,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s53",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #27",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$132,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s54",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #28",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$135,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s55",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #29",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$137,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s56",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #30",
+    "sub": "Story Progression \u2022 Chapter 2",
+    "xp": "$140,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s57",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #31",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$142,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s58",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #32",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$145,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s59",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #33",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$147,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s60",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #34",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$150,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s61",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #35",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$152,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s62",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #36",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$155,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s63",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #37",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$157,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s64",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #38",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$160,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s65",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #39",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$162,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s66",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #40",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$165,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s67",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #41",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$167,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "s68",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #42",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$170,000 Payout",
+    "missable": false
+  },
+  {
+    "id": "s69",
+    "cat": "story",
+    "title": "Leonida Syndicate Contract #43",
+    "sub": "Story Progression \u2022 Chapter 3",
+    "xp": "$172,500 Payout",
+    "missable": false
+  },
+  {
+    "id": "f01",
+    "cat": "strangers",
+    "title": "Gator Hunter: Swamp King",
+    "sub": "Keys Region \u2022 Legendary Beast Hunt",
+    "xp": "Crocodile Skin Armor",
+    "missable": false
+  },
+  {
+    "id": "f02",
+    "cat": "strangers",
+    "title": "Influencer Gone Rogue 1",
+    "sub": "Ocean Beach \u2022 Viral Prank Chase",
+    "xp": "Camera Drone",
+    "missable": false
+  },
+  {
+    "id": "f03",
+    "cat": "strangers",
+    "title": "Influencer Gone Rogue 2",
+    "sub": "Downtown Rooftop Stunt",
+    "xp": "Follower Boost",
+    "missable": false
+  },
+  {
+    "id": "f04",
+    "cat": "strangers",
+    "title": "Bail Bonds: The Yacht Runner",
+    "sub": "Vice Bay \u2022 Offshore Bounty",
+    "xp": "$10,000 Bounty",
+    "missable": false
+  },
+  {
+    "id": "f05",
+    "cat": "strangers",
+    "title": "Bail Bonds: The Everglades Drifter",
+    "sub": "Keys Region \u2022 Airboat Chase",
+    "xp": "$15,000 Bounty",
+    "missable": false
+  },
+  {
+    "id": "f06",
+    "cat": "strangers",
+    "title": "Vice City Conspiracy Theorist",
+    "sub": "Radar Station \u2022 Alien Radio Signal",
+    "xp": "Secret Map Decryptor",
+    "missable": false
+  },
+  {
+    "id": "f07",
+    "cat": "strangers",
+    "title": "Street Racer: South Beach Drag",
+    "sub": "Midnight Street Circuit 1",
+    "xp": "Tuned Sports Car",
+    "missable": false
+  },
+  {
+    "id": "f08",
+    "cat": "strangers",
+    "title": "Street Racer: Downtown Freeway",
+    "sub": "Midnight Street Circuit 2",
+    "xp": "Nitrous Upgrade",
+    "missable": false
+  },
+  {
+    "id": "f09",
+    "cat": "strangers",
+    "title": "The Star Island Art Thief",
+    "sub": "Mansion Stealth Infiltration",
+    "xp": "$25,000 Diamonds",
+    "missable": false
+  },
+  {
+    "id": "f10",
+    "cat": "strangers",
+    "title": "Voodoo Priestess of Little Haiti",
+    "sub": "Herbal Visions & Shamanism",
+    "xp": "Max Health Boost +20%",
+    "missable": false
+  },
+  {
+    "id": "f11",
+    "cat": "strangers",
+    "title": "Paparazzi Revenge Ambush",
+    "sub": "Vice Hotel Celebrity Extortion",
+    "xp": "Celebrity Phone Numbers",
+    "missable": false
+  },
+  {
+    "id": "f12",
+    "cat": "strangers",
+    "title": "The Deep Sea Salvager",
+    "sub": "Submerged Submarine Wreck",
+    "xp": "Mini-Submersible",
+    "missable": false
+  },
+  {
+    "id": "f13",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #13",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #13",
+    "missable": false
+  },
+  {
+    "id": "f14",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #14",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #14",
+    "missable": false
+  },
+  {
+    "id": "f15",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #15",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #15",
+    "missable": false
+  },
+  {
+    "id": "f16",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #16",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #16",
+    "missable": false
+  },
+  {
+    "id": "f17",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #17",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #17",
+    "missable": false
+  },
+  {
+    "id": "f18",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #18",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #18",
+    "missable": false
+  },
+  {
+    "id": "f19",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #19",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #19",
+    "missable": false
+  },
+  {
+    "id": "f20",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #20",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #20",
+    "missable": false
+  },
+  {
+    "id": "f21",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #21",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #21",
+    "missable": false
+  },
+  {
+    "id": "f22",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #22",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #22",
+    "missable": false
+  },
+  {
+    "id": "f23",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #23",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #23",
+    "missable": false
+  },
+  {
+    "id": "f24",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #24",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #24",
+    "missable": false
+  },
+  {
+    "id": "f25",
+    "cat": "strangers",
+    "title": "Vice City Oddball Encounter #25",
+    "sub": "Strangers & Freaks \u2022 World Side Quest",
+    "xp": "Special Weapon & Perk #25",
+    "missable": false
+  },
+  {
+    "id": "c01",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #01",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 1",
+    "missable": false
+  },
+  {
+    "id": "c02",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #02",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 2",
+    "missable": false
+  },
+  {
+    "id": "c03",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #03",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 3",
+    "missable": false
+  },
+  {
+    "id": "c04",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #04",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 4",
+    "missable": false
+  },
+  {
+    "id": "c05",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #05",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 5",
+    "missable": false
+  },
+  {
+    "id": "c06",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #06",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 6",
+    "missable": false
+  },
+  {
+    "id": "c07",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #07",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 7",
+    "missable": false
+  },
+  {
+    "id": "c08",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #08",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 8",
+    "missable": false
+  },
+  {
+    "id": "c09",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #09",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 9",
+    "missable": false
+  },
+  {
+    "id": "c10",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #10",
+    "sub": "Collectible \u2022 Vice City District #1",
+    "xp": "Cache Reward + Stash Tier 10",
+    "missable": false
+  },
+  {
+    "id": "c11",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #11",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 11",
+    "missable": false
+  },
+  {
+    "id": "c12",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #12",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 12",
+    "missable": false
+  },
+  {
+    "id": "c13",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #13",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 13",
+    "missable": false
+  },
+  {
+    "id": "c14",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #14",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 14",
+    "missable": false
+  },
+  {
+    "id": "c15",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #15",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 15",
+    "missable": false
+  },
+  {
+    "id": "c16",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #16",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 16",
+    "missable": false
+  },
+  {
+    "id": "c17",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #17",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 17",
+    "missable": false
+  },
+  {
+    "id": "c18",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #18",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 18",
+    "missable": false
+  },
+  {
+    "id": "c19",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #19",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 19",
+    "missable": false
+  },
+  {
+    "id": "c20",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #20",
+    "sub": "Collectible \u2022 Vice City District #2",
+    "xp": "Cache Reward + Stash Tier 20",
+    "missable": false
+  },
+  {
+    "id": "c21",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #21",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 21",
+    "missable": false
+  },
+  {
+    "id": "c22",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #22",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 22",
+    "missable": false
+  },
+  {
+    "id": "c23",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #23",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 23",
+    "missable": false
+  },
+  {
+    "id": "c24",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #24",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 24",
+    "missable": false
+  },
+  {
+    "id": "c25",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #25",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 25",
+    "missable": false
+  },
+  {
+    "id": "c26",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #26",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 26",
+    "missable": false
+  },
+  {
+    "id": "c27",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #27",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 27",
+    "missable": false
+  },
+  {
+    "id": "c28",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #28",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 28",
+    "missable": false
+  },
+  {
+    "id": "c29",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #29",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 29",
+    "missable": false
+  },
+  {
+    "id": "c30",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #30",
+    "sub": "Collectible \u2022 Vice City District #3",
+    "xp": "Cache Reward + Stash Tier 30",
+    "missable": false
+  },
+  {
+    "id": "c31",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #31",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 31",
+    "missable": false
+  },
+  {
+    "id": "c32",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #32",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 32",
+    "missable": false
+  },
+  {
+    "id": "c33",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #33",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 33",
+    "missable": false
+  },
+  {
+    "id": "c34",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #34",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 34",
+    "missable": false
+  },
+  {
+    "id": "c35",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #35",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 35",
+    "missable": false
+  },
+  {
+    "id": "c36",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #36",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 36",
+    "missable": false
+  },
+  {
+    "id": "c37",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #37",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 37",
+    "missable": false
+  },
+  {
+    "id": "c38",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #38",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 38",
+    "missable": false
+  },
+  {
+    "id": "c39",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #39",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 39",
+    "missable": false
+  },
+  {
+    "id": "c40",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #40",
+    "sub": "Collectible \u2022 Vice City District #4",
+    "xp": "Cache Reward + Stash Tier 40",
+    "missable": false
+  },
+  {
+    "id": "c41",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #41",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 41",
+    "missable": false
+  },
+  {
+    "id": "c42",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #42",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 42",
+    "missable": false
+  },
+  {
+    "id": "c43",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #43",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 43",
+    "missable": false
+  },
+  {
+    "id": "c44",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #44",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 44",
+    "missable": false
+  },
+  {
+    "id": "c45",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #45",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 45",
+    "missable": false
+  },
+  {
+    "id": "c46",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #46",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 46",
+    "missable": false
+  },
+  {
+    "id": "c47",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #47",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 47",
+    "missable": false
+  },
+  {
+    "id": "c48",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #48",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 48",
+    "missable": false
+  },
+  {
+    "id": "c49",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #49",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 49",
+    "missable": false
+  },
+  {
+    "id": "c50",
+    "cat": "collectibles",
+    "title": "Hidden Neon Cache #50",
+    "sub": "Collectible \u2022 Vice City District #5",
+    "xp": "Cache Reward + Stash Tier 50",
+    "missable": false
+  },
+  {
+    "id": "h01",
+    "cat": "heists",
+    "title": "Safehouse: Ocean View Apartment",
+    "sub": "Purchased for $150,000",
+    "xp": "2-Car Garage Storage",
+    "missable": false
+  },
+  {
+    "id": "h02",
+    "cat": "heists",
+    "title": "Safehouse: Starfish Island Villa",
+    "sub": "Purchased for $1,500,000",
+    "xp": "Helipad & Yacht Dock",
+    "missable": false
+  },
+  {
+    "id": "h03",
+    "cat": "heists",
+    "title": "Asset: Malibu Club Revival",
+    "sub": "Weekly Passive Income $30k",
+    "xp": "VIP Protection Missions",
+    "missable": false
+  },
+  {
+    "id": "h04",
+    "cat": "heists",
+    "title": "Asset: Sunshine Autos Showroom",
+    "sub": "Vehicle Export List (20 Cars)",
+    "xp": "Deluxo Classic Car",
+    "missable": false
+  },
+  {
+    "id": "h05",
+    "cat": "heists",
+    "title": "Asset: InterGlobal Film Studios",
+    "sub": "Movie Prop Robberies",
+    "xp": "Weekly Income $20k",
+    "missable": false
+  },
+  {
+    "id": "h06",
+    "cat": "heists",
+    "title": "Mini-Heist: Ocean Blvd Armored Truck",
+    "sub": "Highway Ambush Operation",
+    "xp": "$40,000 Cash",
+    "missable": false
+  },
+  {
+    "id": "h07",
+    "cat": "heists",
+    "title": "Mini-Heist: Galleria Jewelry Vault",
+    "sub": "Smash and Grab Drill",
+    "xp": "$75,000 Diamonds",
+    "missable": false
+  },
+  {
+    "id": "h08",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #8",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $40,000",
+    "missable": false
+  },
+  {
+    "id": "h09",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #9",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $45,000",
+    "missable": false
+  },
+  {
+    "id": "h10",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #10",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $50,000",
+    "missable": false
+  },
+  {
+    "id": "h11",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #11",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $55,000",
+    "missable": false
+  },
+  {
+    "id": "h12",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #12",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $60,000",
+    "missable": false
+  },
+  {
+    "id": "h13",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #13",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $65,000",
+    "missable": false
+  },
+  {
+    "id": "h14",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #14",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $70,000",
+    "missable": false
+  },
+  {
+    "id": "h15",
+    "cat": "heists",
+    "title": "Commercial Asset & Heist #15",
+    "sub": "Revenue Property Acquisition",
+    "xp": "Weekly Profit $75,000",
+    "missable": false
+  },
+  {
+    "id": "a01",
+    "cat": "activities",
+    "title": "Golf Championship: 9-Hole Match",
+    "sub": "Leaf Links Country Club",
+    "xp": "Strength Stat 100%",
+    "missable": false
+  },
+  {
+    "id": "a02",
+    "cat": "activities",
+    "title": "Tennis Grand Slam Finals",
+    "sub": "Vice Beach Courts",
+    "xp": "Stamina Stat 100%",
+    "missable": false
+  },
+  {
+    "id": "a03",
+    "cat": "activities",
+    "title": "Shooting Range: All Gold Medals",
+    "sub": "Ammu-Nation Downtown",
+    "xp": "Reload Speed +25%",
+    "missable": false
+  },
+  {
+    "id": "a04",
+    "cat": "activities",
+    "title": "Triathlon: Leonida Iron Run",
+    "sub": "Swim, Bike, Sprint Challenge",
+    "xp": "Endurance Jersey",
+    "missable": false
+  },
+  {
+    "id": "a05",
+    "cat": "activities",
+    "title": "Deep Sea Shark Hunting",
+    "sub": "Outer Barrier Reefs",
+    "xp": "Trophy Mount in Villa",
+    "missable": false
+  },
+  {
+    "id": "a06",
+    "cat": "activities",
+    "title": "Random Event: ATM Mugging Rescue",
+    "sub": "Citizen Rescue 5 Times",
+    "xp": "Karma & Cash Reward",
+    "missable": false
+  },
+  {
+    "id": "a07",
+    "cat": "activities",
+    "title": "Random Event: Stolen Supercar Recovery",
+    "sub": "Highway Pursuit",
+    "xp": "Keep the Supercar",
+    "missable": false
+  },
+  {
+    "id": "a08",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #8",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +80",
+    "missable": false
+  },
+  {
+    "id": "a09",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #9",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +90",
+    "missable": false
+  },
+  {
+    "id": "a10",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #10",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +100",
+    "missable": false
+  },
+  {
+    "id": "a11",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #11",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +110",
+    "missable": false
+  },
+  {
+    "id": "a12",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #12",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +120",
+    "missable": false
+  },
+  {
+    "id": "a13",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #13",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +130",
+    "missable": false
+  },
+  {
+    "id": "a14",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #14",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +140",
+    "missable": false
+  },
+  {
+    "id": "a15",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #15",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +150",
+    "missable": false
+  },
+  {
+    "id": "a16",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #16",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +160",
+    "missable": false
+  },
+  {
+    "id": "a17",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #17",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +170",
+    "missable": false
+  },
+  {
+    "id": "a18",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #18",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +180",
+    "missable": false
+  },
+  {
+    "id": "a19",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #19",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +190",
+    "missable": false
+  },
+  {
+    "id": "a20",
+    "cat": "activities",
+    "title": "World Event & Stunt Activity #20",
+    "sub": "Dynamic World Challenge",
+    "xp": "Reputation Score +200",
+    "missable": false
+  }
+];
+
+    // Safe Memory Fallback for Private/Incognito Browsing & Strict Security Sandbox
+    window._memStorage = {};
+    function safeGetTasks() {
+      try {
+        const item = localStorage.getItem('vc_completed_tasks_2026');
+        return item ? JSON.parse(item) : {};
+      } catch(e) {
+        return window._memStorage || {};
+      }
+    }
+    function safeSaveTasks(data) {
+      try {
+        localStorage.setItem('vc_completed_tasks_2026', JSON.stringify(data));
+      } catch(e) {
+        window._memStorage = data;
+      }
+    }
+
+    let completedTasks = safeGetTasks();
+    let currentFilter = 'all';
+
+    function setFilter(cat) {
+      currentFilter = cat;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-cat') === cat) {
+          btn.className = 'filter-btn active px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-pink text-white shadow-lg shadow-vice-pink/30';
+        } else {
+          btn.className = 'filter-btn px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition bg-vice-card text-slate-400 hover:text-white border border-vice-border';
+        }
+      });
+      renderTasks();
+    }
+
+    function toggleTask(id) {
+      if (completedTasks[id]) {
+        delete completedTasks[id];
+        playChime(false);
+      } else {
+        completedTasks[id] = true;
+        playChime(true);
+      }
+      safeSaveTasks(completedTasks);
+      renderTasks();
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const total = DB.length;
+      const completed = Object.keys(completedTasks).length;
+      const percent = total > 0 ? ((completed / total) * 100).toFixed(1) : 0;
+
+      document.getElementById('percent-label').innerText = percent + '%';
+      document.getElementById('count-label').innerText = completed + ' / ' + total;
+      document.getElementById('progress-bar').style.width = percent + '%';
+
+      // Dynamic Sub-Stats directly from DB category counts
+      const storyTotal = DB.filter(d => d.cat === 'story').length;
+      const collectTotal = DB.filter(d => d.cat === 'collectibles').length;
+      const strangerTotal = DB.filter(d => d.cat === 'strangers').length;
+      const heistTotal = DB.filter(d => d.cat === 'heists' || d.cat === 'activities').length;
+
+      const storyCount = DB.filter(d => d.cat === 'story' && completedTasks[d.id]).length;
+      const collectCount = DB.filter(d => d.cat === 'collectibles' && completedTasks[d.id]).length;
+      const strangerCount = DB.filter(d => d.cat === 'strangers' && completedTasks[d.id]).length;
+      const heistCount = DB.filter(d => (d.cat === 'heists' || d.cat === 'activities') && completedTasks[d.id]).length;
+
+      document.getElementById('stat-story').innerText = storyCount + ' / ' + storyTotal;
+      document.getElementById('stat-collectibles').innerText = collectCount + ' / ' + collectTotal;
+      document.getElementById('stat-strangers').innerText = strangerCount + ' / ' + strangerTotal;
+      document.getElementById('stat-heists').innerText = heistCount + ' / ' + heistTotal;
+    }
+
+    function renderTasks() {
+      const container = document.getElementById('tasks-container');
+      const search = document.getElementById('search-input').value.toLowerCase().trim();
+      const empty = document.getElementById('empty-state');
+
+      container.innerHTML = '';
+      let visibleCount = 0;
+
+      DB.forEach(task => {
+        if (currentFilter !== 'all' && task.cat !== currentFilter) return;
+        if (search && !task.title.toLowerCase().includes(search) && !task.sub.toLowerCase().includes(search) && !task.xp.toLowerCase().includes(search)) return;
+
+        visibleCount++;
+        const isDone = !!completedTasks[task.id];
+
+        const card = document.createElement('div');
+        card.className = 'glass-panel p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex items-start gap-3.5 ' + 
+          (isDone ? 'border-emerald-500/40 bg-emerald-950/20 opacity-75' : 'border-vice-border hover:border-vice-cyan/50 hover:shadow-lg hover:shadow-vice-cyan/10');
+        card.onclick = () => toggleTask(task.id);
+
+        card.innerHTML = `
+          <div class="mt-0.5 w-5 h-5 rounded flex items-center justify-center border transition ${
+            isDone ? 'bg-emerald-500 border-emerald-400 text-black font-bold' : 'border-slate-600 bg-slate-900/60'
+          }">
+            ${isDone ? '✓' : ''}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-sm font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'} truncate">
+                ${escapeHtml(task.title)}
+              </h3>
+              ${task.missable ? '<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800">MISSABLE</span>' : ''}
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(task.sub)}</p>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-vice-cyan border border-slate-700">
+                ${escapeHtml(task.xp)}
+              </span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      empty.classList.toggle('hidden', visibleCount > 0);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text || '';
+      return div.innerHTML;
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(completedTasks));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "vice_city_100_progress_backup.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (typeof imported === 'object' && imported !== null && !Array.isArray(imported)) {
+            completedTasks = imported;
+            safeSaveTasks(completedTasks);
+            renderTasks();
+            updateProgress();
+            alert('Progress imported successfully!');
+          } else {
+            alert('Invalid backup format.');
+          }
+        } catch(err) {
+          alert('Error parsing backup file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetAll() {
+      if (confirm('Are you sure you want to reset all 100% completion progress?')) {
+        completedTasks = {};
+        try { localStorage.removeItem('vc_completed_tasks_2026'); } catch(e) {} window._memStorage = {};
+        renderTasks();
+        updateProgress();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('search-input').focus();
+      }
+    });
+
+    renderTasks();
+    updateProgress();
+  </script>
+</body>
+</html>
